@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f0b1e">
+<meta name="description" content="PIN POP — a lightweight casual puzzle game. Tap smart, make the biggest POP!">
+<title>PIN POP</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%237c5cff'/%3E%3Ccircle cx='24' cy='24' r='9' fill='%23fff' opacity='.55'/%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   PIN POP — styles
+   ============================================================ */
+*,*::before,*::after{ box-sizing:border-box; }
+
+:root{
+  --bg:#0f0b1e;
+  --bg-2:#1a1233;
+  --card:rgba(255,255,255,.055);
+  --card-line:rgba(255,255,255,.09);
+  --text:#f4f1fd;
+  --muted:#a99fc4;
+  --primary:#7c5cff;
+  --primary-2:#a68cff;
+  --primary-deep:#4a34b8;
+  --danger:#ff4d6d;
+  --danger-deep:#a81f3a;
+  --radius:18px;
+  --shadow:0 12px 34px rgba(0,0,0,.42);
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+}
+
+html,body{
+  margin:0; padding:0; height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior:none;
+  overflow:hidden;
+}
+
+body::before{
+  content:"";
+  position:fixed; inset:0;
+  background:
+    radial-gradient(1100px 700px at 12% -8%, rgba(124,92,255,.30), transparent 62%),
+    radial-gradient(900px 640px at 100% 106%, rgba(34,211,238,.18), transparent 60%),
+    linear-gradient(180deg,#0f0b1e 0%,#15102b 55%,#0d0a1a 100%);
+  z-index:-1;
+  pointer-events:none;
+}
+
+#app{ position:fixed; inset:0; overflow:hidden; }
+
+/* ---------- screens ---------- */
+.screen{
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  opacity:0; visibility:hidden;
+  transition:opacity .24s ease, visibility .24s ease;
+  overflow:hidden;
+}
+.screen.active{ opacity:1; visibility:visible; }
+
+.screen-inner{
+  flex:1 1 auto; min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  display:flex; flex-direction:column; gap:.85rem;
+  width:100%; max-width:620px; margin:0 auto;
+  padding:calc(1rem + var(--safe-t)) calc(1rem + var(--safe-r)) calc(1.4rem + var(--safe-b)) calc(1rem + var(--safe-l));
+}
+.screen-inner.center{ justify-content:center; align-items:center; }
+
+/* ---------- splash ---------- */
+#screen-splash{ align-items:center; justify-content:center; }
+.splash{ text-align:center; padding:1.5rem; }
+.splash-logo{
+  font-size:clamp(2.6rem,12vw,4.6rem);
+  font-weight:900; letter-spacing:.06em; line-height:1;
+  color:#fff;
+  text-shadow:0 0 34px rgba(124,92,255,.7);
+}
+.splash-logo span{ color:var(--primary-2); }
+.splash-sub{
+  margin-top:1rem;
+  font-size:clamp(.85rem,3.6vw,1.05rem);
+  letter-spacing:.24em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+
+/* ---------- menu ---------- */
+.menu{ justify-content:center; align-items:center; text-align:center; gap:2rem; }
+.brand{ display:flex; flex-direction:column; align-items:center; gap:.5rem; }
+.title{
+  margin:0;
+  font-size:clamp(2.6rem,13vw,4.4rem);
+  font-weight:900; letter-spacing:.05em; line-height:1;
+  text-shadow:0 0 40px rgba(124,92,255,.55);
+}
+.title span{ color:var(--primary-2); }
+.tagline{ margin:0; color:var(--muted); font-size:clamp(.82rem,3.4vw,1rem); }
+.menu-actions{ display:flex; flex-direction:column; align-items:center; gap:.85rem; width:100%; max-width:380px; }
+.level-note{ margin:0; color:var(--muted); font-size:.88rem; font-weight:600; letter-spacing:.05em; }
+.menu-row{ display:flex; flex-wrap:wrap; gap:.55rem; justify-content:center; width:100%; }
+.menu-row .btn{ flex:1 1 auto; min-width:110px; font-size:.86rem; padding:.65rem .6rem; }
+
+/* ---------- buttons ---------- */
+.btn{
+  -webkit-appearance:none; appearance:none;
+  border:0; cursor:pointer; font:inherit; font-weight:700;
+  color:var(--text);
+  background:rgba(255,255,255,.09);
+  border:1px solid var(--card-line);
+  padding:.8rem 1.1rem;
+  border-radius:15px;
+  min-height:50px;
+  display:inline-flex; align-items:center; justify-content:center; gap:.4rem;
+  touch-action:manipulation;
+  user-select:none; -webkit-user-select:none;
+  transition:transform .12s ease, background .16s ease, box-shadow .16s ease, opacity .16s;
+  white-space:nowrap;
+}
+.btn:hover{ background:rgba(255,255,255,.15); }
+.btn:active{ transform:scale(.965); }
+.btn:focus-visible{ outline:3px solid var(--primary-2); outline-offset:2px; }
+.btn:disabled{ opacity:.42; cursor:default; pointer-events:none; }
+
+.btn-primary{
+  background:linear-gradient(180deg,var(--primary-2),var(--primary));
+  border-color:transparent;
+  color:#fff;
+  box-shadow:0 5px 0 var(--primary-deep), 0 12px 26px rgba(124,92,255,.42);
+}
+.btn-primary:hover{ background:linear-gradient(180deg,#b39bff,#8a6dff); }
+.btn-primary:active{ box-shadow:0 1px 0 var(--primary-deep); transform:translateY(4px) scale(.99); }
+
+.btn-lg{ font-size:clamp(1.05rem,4.4vw,1.3rem); padding:1rem 2.6rem; border-radius:19px; min-height:62px; letter-spacing:.12em; }
+.btn-wide{ width:100%; }
+.btn-danger{ background:linear-gradient(180deg,#ff6b85,#e63655); border-color:transparent; color:#fff; box-shadow:0 5px 0 var(--danger-deep); }
+.btn-danger:hover{ background:linear-gradient(180deg,#ff7f95,#ef4160); }
+.btn-danger:active{ box-shadow:0 1px 0 var(--danger-deep); transform:translateY(4px) scale(.99); }
+
+.icon-btn{
+  -webkit-appearance:none; appearance:none;
+  width:48px; height:48px; flex:0 0 auto;
+  border-radius:14px; border:1px solid var(--card-line);
+  background:rgba(255,255,255,.08);
+  color:var(--text); font-size:1rem; font-weight:800;
+  cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+  touch-action:manipulation;
+  transition:transform .12s, background .16s;
+}
+.icon-btn:hover{ background:rgba(255,255,255,.15); }
+.icon-btn:active{ transform:scale(.94); }
+.icon-btn:focus-visible{ outline:3px solid var(--primary-2); outline-offset:2px; }
+
+/* ---------- sub header ---------- */
+.sub-header{
+  display:flex; align-items:center; gap:.75rem;
+  margin-bottom:.15rem;
+}
+.sub-header h2{ margin:0; font-size:clamp(1.15rem,4.6vw,1.5rem); font-weight:800; flex:1 1 auto; text-align:center; }
+.sub-header .spacer{ width:48px; flex:0 0 auto; }
+
+/* ---------- cards ---------- */
+.card{
+  background:var(--card);
+  border:1px solid var(--card-line);
+  border-radius:var(--radius);
+  padding:1rem 1.05rem;
+  box-shadow:0 6px 20px rgba(0,0,0,.22);
+}
+.card h3{
+  margin:0 0 .7rem;
+  font-size:.76rem; font-weight:800;
+  letter-spacing:.16em; text-transform:uppercase;
+  color:var(--primary-2);
+}
+.card .row:last-child{ margin-bottom:-.25rem; }
+.muted{ color:var(--muted); font-size:.92rem; line-height:1.5; margin:.35rem 0; }
+.quote{
+  margin:.7rem 0 .1rem;
+  font-style:italic; font-weight:700;
+  color:var(--primary-2);
+  font-size:.98rem; line-height:1.45;
+}
+.steps{ margin:.2rem 0 .1rem; padding-left:1.25rem; color:var(--muted); font-size:.93rem; line-height:1.65; }
+.steps li{ margin-bottom:.25rem; }
+
+.row{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:1rem; min-height:48px;
+  font-size:.96rem; font-weight:600;
+  cursor:pointer;
+}
+.version{ text-align:center; color:var(--muted); font-size:.76rem; margin:.4rem 0 .2rem; letter-spacing:.08em; }
+
+/* ---------- form controls ---------- */
+.switch{
+  -webkit-appearance:none; appearance:none;
+  width:54px; height:32px; flex:0 0 auto;
+  border-radius:999px; border:0; padding:0; margin:0;
+  background:rgba(255,255,255,.16);
+  position:relative; cursor:pointer;
+  transition:background .2s ease;
+}
+.switch::after{
+  content:""; position:absolute; top:3px; left:3px;
+  width:26px; height:26px; border-radius:50%;
+  background:#fff;
+  box-shadow:0 2px 5px rgba(0,0,0,.4);
+  transition:transform .2s cubic-bezier(.2,.8,.3,1);
+}
+.switch:checked{ background:var(--primary); }
+.switch:checked::after{ transform:translateX(22px); }
+.switch:focus-visible{ outline:3px solid var(--primary-2); outline-offset:3px; }
+
+input[type=range]{
+  -webkit-appearance:none; appearance:none;
+  flex:1 1 auto; min-width:90px; max-width:180px;
+  height:7px; border-radius:999px;
+  background:rgba(255,255,255,.18);
+  outline:none; margin:0; cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none;
+  width:24px; height:24px; border-radius:50%;
+  background:#fff; cursor:pointer;
+  box-shadow:0 2px 7px rgba(0,0,0,.45);
+}
+input[type=range]::-moz-range-thumb{
+  width:24px; height:24px; border:0; border-radius:50%;
+  background:#fff; cursor:pointer;
+  box-shadow:0 2px 7px rgba(0,0,0,.45);
+}
+input[type=range]:focus-visible{ outline:3px solid var(--primary-2); outline-offset:5px; }
+
+/* ---------- developer card ---------- */
+.dev-card{ text-align:center; display:flex; flex-direction:column; gap:.65rem; align-items:center; padding:1.5rem 1.15rem; }
+.dev-avatar{
+  width:70px; height:70px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:900; font-size:1.35rem; color:#fff;
+  background:linear-gradient(150deg,var(--primary-2),var(--primary));
+  box-shadow:0 8px 22px rgba(124,92,255,.45);
+  margin-bottom:.35rem;
+}
+.dev-line{ margin:0; color:#ded7f5; font-size:.95rem; line-height:1.6; }
+
+/* ============================================================
+   GAME SCREEN
+   ============================================================ */
+#screen-game{ padding:0; }
+
+.game-layout{
+  display:flex; flex-direction:column;
+  height:100%; width:100%; min-height:0;
+  padding:calc(.55rem + var(--safe-t)) calc(.65rem + var(--safe-r)) calc(.55rem + var(--safe-b)) calc(.65rem + var(--safe-l));
+  gap:.5rem;
+}
+
+.hud{
+  display:flex; align-items:center; gap:.55rem;
+  flex:0 0 auto;
+}
+.hud-stats{
+  flex:1 1 auto; display:flex; gap:.4rem; justify-content:center; min-width:0;
+}
+.stat{
+  display:flex; flex-direction:column; align-items:center;
+  background:rgba(255,255,255,.06);
+  border:1px solid var(--card-line);
+  border-radius:13px;
+  padding:.3rem .7rem;
+  min-width:62px; flex:0 1 auto;
+}
+.stat-label{ font-size:.58rem; letter-spacing:.13em; text-transform:uppercase; color:var(--muted); font-weight:800; }
+.stat-value{ font-size:1.05rem; font-weight:900; line-height:1.2; font-variant-numeric:tabular-nums; }
+.hud-chain{
+  flex:0 0 auto;
+  display:flex; align-items:center; gap:.25rem;
+  background:rgba(255,176,32,.14);
+  border:1px solid rgba(255,176,32,.3);
+  color:#ffce6b;
+  border-radius:13px; padding:.42rem .6rem;
+  font-weight:900; font-size:.9rem; height:48px;
+}
+
+.progress{
+  flex:0 0 auto; height:7px; border-radius:99px;
+  background:rgba(255,255,255,.09);
+  overflow:hidden;
+}
+.progress-fill{
+  height:100%; width:0%;
+  border-radius:99px;
+  background:linear-gradient(90deg,var(--primary),#22d3ee);
+  transition:width .28s cubic-bezier(.2,.8,.3,1);
+}
+
+.board-wrap{
+  flex:1 1 auto; min-height:0; min-width:0;
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+  overflow:hidden;
+}
+.board{
+  position:relative;
+  contain:layout style;
+  touch-action:manipulation;
+}
+.board.shake{ animation:boardShake .22s ease; }
+@keyframes boardShake{
+  0%,100%{ transform:translate(0,0); }
+  25%{ transform:translate(2px,-2px); }
+  50%{ transform:translate(-2px,1px); }
+  75%{ transform:translate(1px,2px); }
+}
+
+.pin{
+  position:absolute; top:0; left:0;
+  width:var(--cell,44px); height:var(--cell,44px);
+  transition:transform .2s cubic-bezier(.2,.8,.3,1);
+  cursor:pointer;
+}
+.pin-dot{
+  display:block; width:100%; height:100%;
+  border-radius:50%;
+  background:var(--c,#7c5cff);
+  box-shadow:
+    inset 0 -16% 0 rgba(0,0,0,.22),
+    inset 0 14% 0 rgba(255,255,255,.30),
+    0 3px 7px rgba(0,0,0,.32);
+  transition:transform .16s ease, opacity .16s ease;
+  pointer-events:none;
+}
+@media (hover:hover) and (pointer:fine){
+  .pin:hover .pin-dot{ transform:scale(1.09); }
+}
+.pin:active .pin-dot{ transform:scale(.92); }
+
+.pin.pop .pin-dot{ animation:pinPop .26s cubic-bezier(.3,.8,.4,1) forwards; }
+@keyframes pinPop{
+  0%{ transform:scale(1); opacity:1; }
+  38%{ transform:scale(1.32); opacity:1; }
+  100%{ transform:scale(0); opacity:0; }
+}
+.pin.hint .pin-dot{ animation:hintPulse .55s ease-in-out 3; }
+@keyframes hintPulse{
+  0%,100%{ transform:scale(1); box-shadow:inset 0 -16% 0 rgba(0,0,0,.22), inset 0 14% 0 rgba(255,255,255,.30), 0 3px 7px rgba(0,0,0,.32); }
+  50%{ transform:scale(1.2); box-shadow:inset 0 -16% 0 rgba(0,0,0,.22), inset 0 14% 0 rgba(255,255,255,.30), 0 0 0 6px rgba(255,255,255,.28); }
+}
+.board.no-anim .pin,
+.board.no-anim .pin-dot{ transition:none !important; }
+
+.game-footer{
+  flex:0 0 auto; display:flex; gap:.55rem;
+}
+.game-footer .btn{ flex:1 1 0; min-height:52px; font-size:.9rem; }
+
+/* ---------- result cards ---------- */
+.result-card{
+  background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.04));
+  border:1px solid var(--card-line);
+  border-radius:24px;
+  padding:1.9rem 1.4rem;
+  width:min(430px,100%);
+  text-align:center;
+  box-shadow:var(--shadow);
+}
+.pop-in{ animation:popIn .34s cubic-bezier(.2,.9,.3,1.1); }
+@keyframes popIn{
+  0%{ transform:scale(.82); opacity:0; }
+  100%{ transform:scale(1); opacity:1; }
+}
+.result-emoji{ font-size:2.9rem; line-height:1; margin-bottom:.5rem; }
+.result-title{
+  margin:0 0 .55rem;
+  font-size:clamp(1.5rem,7vw,2.1rem);
+  font-weight:900; letter-spacing:.05em;
+}
+.stars{
+  font-size:1.7rem; letter-spacing:.28em; color:#ffce4d;
+  margin-bottom:.5rem; text-shadow:0 0 18px rgba(255,206,77,.55);
+}
+.result-line{ margin:0 0 1.15rem; color:var(--muted); font-size:.98rem; font-weight:600; }
+.modal-actions{ display:flex; flex-direction:column; gap:.55rem; }
+.modal-actions.row-2{ flex-direction:row; }
+.modal-actions.row-2 .btn{ flex:1 1 0; }
+
+/* ---------- overlays ---------- */
+.overlay{
+  position:fixed; inset:0; z-index:60;
+  display:flex; align-items:center; justify-content:center;
+  padding:1rem;
+  background:rgba(8,5,18,.82);
+  opacity:0; visibility:hidden;
+  transition:opacity .2s ease, visibility .2s ease;
+}
+.overlay.active{ opacity:1; visibility:visible; }
+.modal{
+  background:#221a3d;
+  border:1px solid var(--card-line);
+  border-radius:24px;
+  padding:1.6rem 1.35rem;
+  width:min(400px,100%);
+  box-shadow:var(--shadow);
+  text-align:center;
+  transform:translateY(8px) scale(.98);
+  transition:transform .2s cubic-bezier(.2,.8,.3,1);
+}
+.overlay.active .modal{ transform:translateY(0) scale(1); }
+.modal h2{ margin:0 0 .55rem; font-size:1.5rem; font-weight:900; }
+.modal .muted{ margin-bottom:1.1rem; }
+.modal-actions .btn{ width:100%; }
+
+/* ---------- toast ---------- */
+.toast{
+  position:fixed; left:50%; bottom:calc(1.4rem + var(--safe-b));
+  transform:translate(-50%,16px);
+  background:rgba(255,255,255,.14);
+  border:1px solid var(--card-line);
+  color:#fff; font-size:.86rem; font-weight:700;
+  padding:.6rem 1.1rem; border-radius:999px;
+  backdrop-filter:blur(8px);
+  opacity:0; pointer-events:none;
+  transition:opacity .22s ease, transform .22s ease;
+  z-index:120; max-width:90vw; text-align:center;
+}
+.toast.show{ opacity:1; transform:translate(-50%,0); }
+
+/* ---------- compact landscape ---------- */
+@media (max-height:520px){
+  .stat{ padding:.18rem .55rem; min-width:54px; }
+  .stat-value{ font-size:.94rem; }
+  .hud-chain{ height:42px; padding:.3rem .5rem; font-size:.82rem; }
+  .icon-btn{ width:42px; height:42px; }
+  .game-footer .btn{ min-height:46px; }
+  .title{ font-size:clamp(2rem,7vw,2.8rem); }
+  .menu{ gap:1.1rem; }
+  .splash-logo{ font-size:clamp(2rem,8vw,3rem); }
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+  }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ SPLASH ============ -->
+  <section class="screen active" id="screen-splash" aria-label="Splash screen">
+    <div class="splash">
+      <div class="splash-logo">PIN<span>POP</span></div>
+      <div class="splash-sub">An Aliyan Production</div>
+    </div>
+  </section>
+
+  <!-- ============ MAIN MENU ============ -->
+  <section class="screen" id="screen-menu" aria-label="Main menu">
+    <div class="screen-inner menu">
+      <div class="brand">
+        <h1 class="title">PIN <span>POP</span></h1>
+        <p class="tagline">Tap smart. Make the biggest POP!</p>
+      </div>
+      <div class="menu-actions">
+        <button class="btn btn-primary btn-lg" id="btn-play" type="button">PLAY</button>
+        <p class="level-note" id="menu-level-note">Level 1</p>
+        <div class="menu-row">
+          <button class="btn" id="btn-settings" type="button">Settings</button>
+          <button class="btn" id="btn-about-game" type="button">Game About</button>
+          <button class="btn" id="btn-about-dev" type="button">Developer About</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ GAME ============ -->
+  <section class="screen" id="screen-game" aria-label="Gameplay">
+    <div class="game-layout">
+      <header class="hud">
+        <button class="icon-btn" id="btn-pause" type="button" aria-label="Pause game">❚❚</button>
+        <div class="hud-stats">
+          <div class="stat"><span class="stat-label">Level</span><span class="stat-value" id="hud-level">1</span></div>
+          <div class="stat"><span class="stat-label">Taps</span><span class="stat-value" id="hud-taps">0</span></div>
+          <div class="stat"><span class="stat-label">Pins</span><span class="stat-value" id="hud-pins">0</span></div>
+        </div>
+        <div class="hud-chain" title="Biggest group currently on the board">⚡<span id="hud-chain-val">0</span></div>
+      </header>
+
+      <div class="progress" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+
+      <div class="board-wrap" id="board-wrap">
+        <div class="board" id="board" role="group" aria-label="Puzzle board"></div>
+      </div>
+
+      <footer class="game-footer">
+        <button class="btn" id="btn-restart" type="button">↻ Restart</button>
+        <button class="btn" id="btn-hint" type="button">💡 Hint <span id="hint-count">3</span></button>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section class="screen" id="screen-settings" aria-label="Settings">
+    <div class="screen-inner">
+      <header class="sub-header">
+        <button class="icon-btn" id="btn-settings-back" type="button" aria-label="Go back">←</button>
+        <h2>Settings</h2>
+        <span class="spacer"></span>
+      </header>
+
+      <div class="card">
+        <h3>Audio</h3>
+        <label class="row" for="set-music"><span>Music</span><input type="checkbox" id="set-music" class="switch" role="switch"></label>
+        <label class="row" for="set-volume"><span>Music Volume</span><input type="range" id="set-volume" min="0" max="100" step="1" value="50"></label>
+        <label class="row" for="set-sfx"><span>Sound Effects</span><input type="checkbox" id="set-sfx" class="switch" role="switch"></label>
+      </div>
+
+      <div class="card">
+        <h3>Haptics</h3>
+        <label class="row" for="set-haptics"><span>Haptic Feedback</span><input type="checkbox" id="set-haptics" class="switch" role="switch"></label>
+        <p class="muted" id="haptics-note"></p>
+      </div>
+
+      <div class="card">
+        <h3>Gameplay</h3>
+        <button class="btn btn-wide" id="btn-set-restart" type="button" style="margin-bottom:.55rem">Restart Current Level</button>
+        <button class="btn btn-wide btn-danger" id="btn-set-reset" type="button">Reset Progress</button>
+      </div>
+
+      <p class="version">PIN POP · v1.0</p>
+    </div>
+  </section>
+
+  <!-- ============ GAME ABOUT ============ -->
+  <section class="screen" id="screen-about-game" aria-label="About the game">
+    <div class="screen-inner">
+      <header class="sub-header">
+        <button class="icon-btn" id="btn-about-game-back" type="button" aria-label="Go back">←</button>
+        <h2>Game About</h2>
+        <span class="spacer"></span>
+      </header>
+      <div class="card">
+        <h3>About PIN POP</h3>
+        <p class="muted">A lightweight casual puzzle game. Pop connected pins, clear the board, and finish before your taps run out.</p>
+      </div>
+      <div class="card">
+        <h3>How to Play</h3>
+        <ol class="steps">
+          <li>Look at the pin arrangement.</li>
+          <li>Select the correct pin.</li>
+          <li>Trigger chain reactions.</li>
+          <li>Clear the board using the available taps.</li>
+          <li>Complete the level and unlock the next challenge.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3>Goal</h3>
+        <p class="muted">Clear the required pins using as few taps as possible.</p>
+        <p class="quote">"Think carefully. Tap smart. Make the biggest POP!"</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DEVELOPER ABOUT ============ -->
+  <section class="screen" id="screen-about-dev" aria-label="About the developer">
+    <div class="screen-inner">
+      <header class="sub-header">
+        <button class="icon-btn" id="btn-about-dev-back" type="button" aria-label="Go back">←</button>
+        <h2>Developer About</h2>
+        <span class="spacer"></span>
+      </header>
+      <div class="card dev-card">
+        <div class="dev-avatar" aria-hidden="true">MA</div>
+        <p class="dev-line">Muhammad Aliyan | BSCS Student, Virtual University.</p>
+        <p class="dev-line">I design and develop websites, Android apps &amp; games with a mix of my own logic and AI assistance.</p>
+        <p class="dev-line">Always learning, always building.</p>
+        <p class="dev-line">Your feedback helps me improve!</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LEVEL COMPLETE ============ -->
+  <section class="screen" id="screen-complete" aria-label="Level complete">
+    <div class="screen-inner center">
+      <div class="result-card pop-in">
+        <div class="result-emoji" aria-hidden="true">🎉</div>
+        <h2 class="result-title">LEVEL COMPLETE!</h2>
+        <div class="stars" id="complete-stars" aria-hidden="true">★★★</div>
+        <p class="result-line" id="complete-info">Level 1</p>
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="btn-next" type="button">Next Level</button>
+          <button class="btn" id="btn-replay" type="button">Replay</button>
+          <button class="btn" id="btn-complete-home" type="button">Home</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LEVEL FAILED ============ -->
+  <section class="screen" id="screen-failed" aria-label="Level failed">
+    <div class="screen-inner center">
+      <div class="result-card pop-in">
+        <div class="result-emoji" aria-hidden="true">💥</div>
+        <h2 class="result-title">TRY AGAIN</h2>
+        <p class="result-line" id="failed-info">Out of taps!</p>
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="btn-retry" type="button">Retry</button>
+          <button class="btn" id="btn-failed-menu" type="button">Main Menu</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PAUSE OVERLAY ============ -->
+  <div class="overlay" id="overlay-pause" role="dialog" aria-modal="true" aria-label="Pause menu">
+    <div class="modal">
+      <h2>Paused</h2>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="btn-resume" type="button">Resume</button>
+        <button class="btn" id="btn-pause-restart" type="button">Restart Level</button>
+        <button class="btn" id="btn-pause-settings" type="button">Settings</button>
+        <button class="btn" id="btn-pause-menu" type="button">Main Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CONFIRM OVERLAY ============ -->
+  <div class="overlay" id="overlay-confirm" role="dialog" aria-modal="true" aria-label="Confirm reset">
+    <div class="modal">
+      <h2>Reset Progress?</h2>
+      <p class="muted">Are you sure you want to reset all your progress?</p>
+      <div class="modal-actions row-2">
+        <button class="btn" id="btn-confirm-cancel" type="button">Cancel</button>
+        <button class="btn btn-danger" id="btn-confirm-reset" type="button">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ==========================================================
+     UTILITIES
+     ========================================================== */
+  var $ = function (id) { return document.getElementById(id); };
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  var REDUCED = false;
+  try {
+    REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  } catch (e) { REDUCED = false; }
+
+  /* ==========================================================
+     STORAGE  (safe localStorage wrapper with in-memory fallback)
+     ========================================================== */
+  var Store = (function () {
+    var usable = true;
+    var mem = {};
+    try {
+      window.localStorage.setItem('__pinpop_t', '1');
+      window.localStorage.removeItem('__pinpop_t');
+    } catch (e) { usable = false; }
+
+    return {
+      get: function (key, fallback) {
+        try {
+          var raw = usable ? window.localStorage.getItem('pinpop_' + key) : mem[key];
+          if (raw === null || raw === undefined) return fallback;
+          return JSON.parse(raw);
+        } catch (e) { return fallback; }
+      },
+      set: function (key, value) {
+        try {
+          var raw = JSON.stringify(value);
+          if (usable) window.localStorage.setItem('pinpop_' + key, raw);
+          else mem[key] = raw;
+        } catch (e) {
+          try { mem[key] = JSON.stringify(value); } catch (e2) { /* give up quietly */ }
+        }
+      },
+      remove: function (key) {
+        try {
+          if (usable) window.localStorage.removeItem('pinpop_' + key);
+          delete mem[key];
+        } catch (e) { /* ignore */ }
+      },
+      usable: usable
+    };
+  })();
+
+  /* ==========================================================
+     SETTINGS
+     ========================================================== */
+  var Settings = {
+    music: true,
+    volume: 0.5,
+    sfx: true,
+    haptics: true,
+    load: function () {
+      var s = Store.get('settings', null);
+      if (s && typeof s === 'object') {
+        if (typeof s.music === 'boolean') this.music = s.music;
+        if (typeof s.sfx === 'boolean') this.sfx = s.sfx;
+        if (typeof s.haptics === 'boolean') this.haptics = s.haptics;
+        if (typeof s.volume === 'number' && isFinite(s.volume)) this.volume = clamp(s.volume, 0, 1);
+      }
+    },
+    save: function () {
+      Store.set('settings', {
+        music: this.music, volume: this.volume,
+        sfx: this.sfx, haptics: this.haptics
+      });
+    }
+  };
+  Settings.load();
+
+  /* ==========================================================
+     PROGRESS
+     ========================================================== */
+  var Progress = {
+    unlocked: 1,
+    load: function () {
+      var p = Store.get('progress', null);
+      if (p && typeof p === 'object' && typeof p.unlocked === 'number') {
+        this.unlocked = clamp(Math.floor(p.unlocked), 1, 100);
+      }
+    },
+    save: function () { Store.set('progress', { unlocked: this.unlocked }); },
+    reset: function () { this.unlocked = 1; this.save(); }
+  };
+  Progress.load();
+
+  /* ==========================================================
+     HAPTICS
+     ========================================================== */
+  var Haptics = {
+    supported: (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function'),
+    buzz: function (pattern) {
+      if (!Settings.haptics || !this.supported) return;
+      try { navigator.vibrate(pattern); } catch (e) { /* ignore */ }
+    }
+  };
+
+  /* ==========================================================
+     SOUND ENGINE (Web Audio, fully synthesised — no assets)
+     ========================================================== */
+  var Sound = (function () {
+    var ctx = null, master = null, musicGain = null, sfxGain = null;
+    var failed = false, musicTimer = null, step = 0;
+
+    function init() {
+      if (ctx || failed) return ctx;
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) { failed = true; return null; }
+        ctx = new AC();
+        master = ctx.createGain();
+        master.gain.value = 0.85;
+        master.connect(ctx.destination);
+
+        musicGain = ctx.createGain();
+        musicGain.gain.value = 0;
+        musicGain.connect(master);
+
+        sfxGain = ctx.createGain();
+        sfxGain.gain.value = 0;
+        sfxGain.connect(master);
+
+        applyVolumes();
+      } catch (e) {
+        failed = true;
+        ctx = null;
+      }
+      return ctx;
+    }
+
+    function applyVolumes() {
+      if (!ctx || !musicGain || !sfxGain) return;
+      try {
+        var now = ctx.currentTime;
+        var mv = Settings.music ? Settings.volume * 0.32 : 0;
+        musicGain.gain.setTargetAtTime(mv, now, 0.06);
+        sfxGain.gain.setTargetAtTime(Settings.sfx ? 0.55 : 0, now, 0.06);
+      } catch (e) { /* ignore */ }
+    }
+
+    function tone(freq, dur, type, gain, dest, when, slideTo) {
+      if (!ctx || !dest) return;
+      try {
+        var t = when || ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var g = ctx.createGain();
+        osc.type = type || 'sine';
+        osc.frequency.setValueAtTime(freq, t);
+        if (slideTo) {
+          osc.frequency.exponentialRampToValueAtTime(Math.max(1, slideTo), t + dur);
+        }
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), t + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        osc.connect(g);
+        g.connect(dest);
+        osc.start(t);
+        osc.stop(t + dur + 0.05);
+      } catch (e) { /* ignore */ }
+    }
+
+    /* ----- music loop ----- */
+    var MELODY = [0, 7, 4, 7, 2, 9, 5, 9, 0, 7, 4, 7, -3, 4, 2, 7];
+    var BASS = [0, -5, -3, -7];
+
+    function musicTick() {
+      if (!ctx || !Settings.music) return;
+      var t = ctx.currentTime;
+      var semi = MELODY[step % MELODY.length];
+      tone(261.63 * Math.pow(2, semi / 12), 0.5, 'triangle', 0.11, musicGain, t);
+      if (step % 4 === 0) {
+        var b = BASS[(step / 4) % BASS.length];
+        tone(130.81 * Math.pow(2, b / 12), 0.95, 'sine', 0.22, musicGain, t);
+      }
+      step++;
+    }
+
+    return {
+      init: init,
+      applyVolumes: applyVolumes,
+
+      resume: function () {
+        if (!ctx) return;
+        try { if (ctx.state === 'suspended') ctx.resume().catch(function () {}); } catch (e) { /* ignore */ }
+      },
+
+      startMusic: function () {
+        init();
+        if (!ctx || failed) return;
+        this.resume();
+        applyVolumes();
+        if (!Settings.music) return;
+        if (musicTimer) return;
+        step = 0;
+        musicTick();
+        musicTimer = window.setInterval(musicTick, 400);
+      },
+
+      stopMusic: function () {
+        if (musicTimer) {
+          window.clearInterval(musicTimer);
+          musicTimer = null;
+        }
+      },
+
+      /* ----- one-shot effects ----- */
+      pop: function (size) {
+        if (!ctx || !Settings.sfx) return;
+        var base = 380 + Math.min(size, 10) * 34;
+        tone(base, 0.1, 'sine', 0.42, sfxGain);
+        tone(base * 1.5, 0.075, 'triangle', 0.2, sfxGain, ctx.currentTime + 0.028);
+      },
+      click: function () {
+        if (!ctx || !Settings.sfx) return;
+        tone(660, 0.05, 'square', 0.1, sfxGain);
+      },
+      win: function () {
+        if (!ctx || !Settings.sfx) return;
+        var now = ctx.currentTime;
+        var notes = [0, 4, 7, 12];
+        for (var i = 0; i < notes.length; i++) {
+          tone(440 * Math.pow(2, notes[i] / 12), 0.3, 'triangle', 0.26, sfxGain, now + i * 0.085);
+        }
+      },
+      fail: function () {
+        if (!ctx || !Settings.sfx) return;
+        var now = ctx.currentTime;
+        tone(300, 0.22, 'sawtooth', 0.16, sfxGain, now, 150);
+        tone(200, 0.32, 'sine', 0.16, sfxGain, now + 0.13, 100);
+      }
+    };
+  })();
+
+  /* ==========================================================
+     DOM REFERENCES
+     ========================================================== */
+  var boardEl = $('board');
+  var boardWrap = $('board-wrap');
+  var hudLevel = $('hud-level');
+  var hudTaps = $('hud-taps');
+  var hudPins = $('hud-pins');
+  var hudChainVal = $('hud-chain-val');
+  var progressFill = $('progress-fill');
+  var hintCountEl = $('hint-count');
+  var btnHint = $('btn-hint');
+  var toastEl = $('toast');
+  var overlayPause = $('overlay-pause');
+  var overlayConfirm = $('overlay-confirm');
+
+  /* ==========================================================
+     PALETTE
+     ========================================================== */
+  var PALETTE = ['#ff5d73', '#ffb020', '#35d07f', '#4a9dff', '#a86bff', '#22d3ee'];
+
+  /* ==========================================================
+     GAME STATE
+     ========================================================== */
+  var G = {
+    state: 'MENU',      // MENU | PLAYING | CHAIN_REACTION | PAUSED | COMPLETE | FAILED
+    level: 1,
+    cols: 0, rows: 0,
+    tapsLeft: 0, tapsTotal: 0,
+    pinsLeft: 0, pinsTotal: 0,
+    par: 0,
+    hints: 3,
+    settingsFrom: 'menu'
+  };
+
+  var L = null;            // current level data
+  var boardArr = [];       // rows x cols -> pin object or null
+  var CELL = 44, GAP = 6;
+  var chainTimer = null;
+  var hintTimer = null;
+  var layoutTries = 0;
+
+  /* ==========================================================
+     LEVEL GENERATION  (fully deterministic, always solvable)
+     ========================================================== */
+  function levelParams(n) {
+    var t = (n - 1) / 99;
+    var size = clamp(Math.round(4 + t * 5), 4, 9);
+    var colors = n <= 10 ? 3 : n <= 35 ? 4 : n <= 70 ? 5 : 6;
+    var slack = Math.max(3, 14 - Math.floor(n / 7));
+    var holes = n < 20 ? 0 : Math.min(0.14, (n - 20) * 0.0022);
+    return { size: size, colors: colors, slack: slack, holes: holes };
+  }
+
+  /* Flood fill on a plain numeric grid. Returns array of flat indices. */
+  function floodFrom(g, cols, rows, r0, c0, seen) {
+    var v = g[r0][c0];
+    if (v < 0) return [];
+    var out = [];
+    var stack = [r0 * cols + c0];
+    seen[r0 * cols + c0] = 1;
+    while (stack.length) {
+      var idx = stack.pop();
+      var r = (idx / cols) | 0;
+      var c = idx % cols;
+      if (g[r][c] !== v) continue;
+      out.push(idx);
+      var k;
+      if (r > 0) { k = (r - 1) * cols + c; if (!seen[k] && g[r - 1][c] === v) { seen[k] = 1; stack.push(k); } }
+      if (r < rows - 1) { k = (r + 1) * cols + c; if (!seen[k] && g[r + 1][c] === v) { seen[k] = 1; stack.push(k); } }
+      if (c > 0) { k = r * cols + c - 1; if (!seen[k] && g[r][c - 1] === v) { seen[k] = 1; stack.push(k); } }
+      if (c < cols - 1) { k = r * cols + c + 1; if (!seen[k] && g[r][c + 1] === v) { seen[k] = 1; stack.push(k); } }
+    }
+    return out;
+  }
+
+  function applyGravityGrid(g, cols, rows) {
+    for (var c = 0; c < cols; c++) {
+      var w = rows - 1;
+      for (var r = rows - 1; r >= 0; r--) {
+        if (g[r][c] >= 0) {
+          var tmp = g[r][c];
+          g[r][c] = -1;
+          g[w][c] = tmp;
+          w--;
+        }
+      }
+    }
+  }
+
+  /* Greedy "always pop biggest group" simulation → par (taps needed) */
+  function simulateTaps(cols, rows, initialGrid) {
+    var g = [];
+    for (var r = 0; r < rows; r++) g.push(initialGrid[r].slice());
+
+    var taps = 0;
+    var guard = 0;
+    while (guard++ < 300) {
+      var seen = new Uint8Array(cols * rows);
+      var best = null, bestLen = 0;
+      for (var rr = 0; rr < rows; rr++) {
+        for (var cc = 0; cc < cols; cc++) {
+          if (g[rr][cc] < 0 || seen[rr * cols + cc]) continue;
+          var cells = floodFrom(g, cols, rows, rr, cc, seen);
+          if (cells.length > bestLen) { bestLen = cells.length; best = cells; }
+        }
+      }
+      if (!best || bestLen === 0) break;
+      for (var i = 0; i < best.length; i++) {
+        g[(best[i] / cols) | 0][best[i] % cols] = -1;
+      }
+      applyGravityGrid(g, cols, rows);
+      taps++;
+    }
+    return taps;
+  }
+
+  function generateLevel(n) {
+    var p = levelParams(n);
+    var candidate = null, chosen = null;
+
+    for (var attempt = 0; attempt < 10; attempt++) {
+      var seed = (((n * 2654435761) ^ (attempt * 40503)) >>> 0);
+      var rnd = mulberry32(seed);
+      var cols = p.size, rows = p.size;
+      var grid = [];
+      var r, c;
+
+      for (r = 0; r < rows; r++) {
+        var row = [];
+        for (c = 0; c < cols; c++) row.push(Math.floor(rnd() * p.colors));
+        grid.push(row);
+      }
+
+      if (p.holes > 0) {
+        for (c = 0; c < cols; c++) {
+          var h = 0;
+          while (h < rows - 3 && rnd() < p.holes) h++;
+          for (r = 0; r < h; r++) grid[r][c] = -1;
+        }
+      }
+
+      var par = simulateTaps(cols, rows, grid);
+      var pinCount = 0;
+      for (r = 0; r < rows; r++) {
+        for (c = 0; c < cols; c++) if (grid[r][c] >= 0) pinCount++;
+      }
+
+      candidate = {
+        cols: cols, rows: rows, colors: p.colors, grid: grid,
+        par: par, pinCount: pinCount, tapsLimit: par + p.slack
+      };
+
+      if (par >= 3 || n < 4) { chosen = candidate; break; }
+    }
+
+    return chosen || candidate;
+  }
+
+  /* ==========================================================
+     BOARD RENDERING
+     ========================================================== */
+  function setPos(el, r, c) {
+    el.style.transform = 'translate3d(' + (c * (CELL + GAP)) + 'px,' + (r * (CELL + GAP)) + 'px,0)';
+  }
+
+  function layout() {
+    if (!L) return;
+    var wrapW = boardWrap.clientWidth;
+    var wrapH = boardWrap.clientHeight;
+
+    if (wrapW < 30 || wrapH < 30) {
+      if (layoutTries++ < 90) window.requestAnimationFrame(layout);
+      return;
+    }
+    layoutTries = 0;
+
+    var pad = 8;
+    var gap = clamp(Math.round(Math.min(wrapW, wrapH) * 0.016), 4, 10);
+    var cellW = (wrapW - pad * 2 - gap * (L.cols - 1)) / L.cols;
+    var cellH = (wrapH - pad * 2 - gap * (L.rows - 1)) / L.rows;
+    var cell = clamp(Math.floor(Math.min(cellW, cellH)), 18, 78);
+
+    CELL = cell;
+    GAP = gap;
+
+    boardEl.style.setProperty('--cell', cell + 'px');
+    boardEl.style.width = (L.cols * cell + (L.cols - 1) * gap) + 'px';
+    boardEl.style.height = (L.rows * cell + (L.rows - 1) * gap) + 'px';
+
+    for (var r = 0; r < L.rows; r++) {
+      for (var c = 0; c < L.cols; c++) {
+        var pin = boardArr[r] && boardArr[r][c];
+        if (pin && pin.el) setPos(pin.el, r, c);
+      }
+    }
+  }
+
+  function repositionPins() {
+    if (!L) return;
+    for (var r = 0; r < L.rows; r++) {
+      for (var c = 0; c < L.cols; c++) {
+        var pin = boardArr[r] && boardArr[r][c];
+        if (pin && pin.el) setPos(pin.el, r, c);
+      }
+    }
+  }
+
+  function renderBoard() {
+    boardEl.textContent = '';
+    boardEl.classList.remove('shake');
+    var frag = document.createDocumentFragment();
+
+    for (var r = 0; r < L.rows; r++) {
+      for (var c = 0; c < L.cols; c++) {
+        var v = L.grid[r][c];
+        if (v < 0) continue;
+
+        var pin = { r: r, c: c, color: v, el: null };
+
+        var el = document.createElement('div');
+        el.className = 'pin';
+        var dot = document.createElement('i');
+        dot.className = 'pin-dot';
+        dot.style.setProperty('--c', PALETTE[v % PALETTE.length]);
+        el.appendChild(dot);
+        el._pin = pin;
+        pin.el = el;
+        boardArr[r][c] = pin;
+        frag.appendChild(el);
+      }
+    }
+    boardEl.appendChild(frag);
+    layout();
+  }
+
+  /* ==========================================================
+     GROUP DETECTION
+     ========================================================== */
+  function findGroup(r0, c0) {
+    var start = boardArr[r0] && boardArr[r0][c0];
+    if (!start) return [];
+
+    var color = start.color;
+    var cols = G.cols, rows = G.rows;
+    var seen = new Uint8Array(cols * rows);
+    var out = [];
+    var stack = [r0 * cols + c0];
+    seen[r0 * cols + c0] = 1;
+
+    while (stack.length) {
+      var idx = stack.pop();
+      var r = (idx / cols) | 0;
+      var c = idx % cols;
+      var p = boardArr[r][c];
+      if (!p || p.color !== color) continue;
+      out.push(p);
+
+      var k, q;
+      if (r > 0) { k = (r - 1) * cols + c; if (!seen[k]) { q = boardArr[r - 1][c]; if (q && q.color === color) { seen[k] = 1; stack.push(k); } } }
+      if (r < rows - 1) { k = (r + 1) * cols + c; if (!seen[k]) { q = boardArr[r + 1][c]; if (q && q.color === color) { seen[k] = 1; stack.push(k); } } }
+      if (c > 0) { k = r * cols + c - 1; if (!seen[k]) { q = boardArr[r][c - 1]; if (q && q.color === color) { seen[k] = 1; stack.push(k); } } }
+      if (c < cols - 1) { k = r * cols + c + 1; if (!seen[k]) { q = boardArr[r][c + 1]; if (q && q.color === color) { seen[k] = 1; stack.push(k); } } }
+    }
+    return out;
+  }
+
+  function largestGroupSize() {
+    if (!L) return 0;
+    var seen = new Uint8Array(G.cols * G.rows);
+    var best = 0;
+    for (var r = 0; r < G.rows; r++) {
+      for (var c = 0; c < G.cols; c++) {
+        if (!boardArr[r][c] || seen[r * G.cols + c]) continue;
+        var g = findGroup(r, c);
+        for (var i = 0; i < g.length; i++) seen[g[i].r * G.cols + g[i].c] = 1;
+        if (g.length > best) best = g.length;
+      }
+    }
+    return best;
+  }
+
+  /* ==========================================================
+     BOARD MUTATION
+     ========================================================== */
+  function applyGravityBoard() {
+    for (var c = 0; c < G.cols; c++) {
+      var w = G.rows - 1;
+      for (var r = G.rows - 1; r >= 0; r--) {
+        var p = boardArr[r][c];
+        if (p) {
+          if (r !== w) {
+            boardArr[w][c] = p;
+            boardArr[r][c] = null;
+            p.r = w;
+          }
+          w--;
+        }
+      }
+    }
+  }
+
+  /* ==========================================================
+     HUD
+     ========================================================== */
+  function updateHUD() {
+    hudLevel.textContent = G.level;
+    hudTaps.textContent = G.tapsLeft;
+    hudPins.textContent = G.pinsLeft;
+    hintCountEl.textContent = G.hints;
+    btnHint.disabled = G.hints <= 0;
+
+    var done = G.pinsTotal - G.pinsLeft;
+    var pct = G.pinsTotal > 0 ? (done / G.pinsTotal) * 100 : 0;
+    progressFill.style.width = pct.toFixed(1) + '%';
+
+    hudChainVal.textContent = largestGroupSize();
+  }
+
+  /* ==========================================================
+     TOAST
+     ========================================================== */
+  var toastTimer = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    if (toastTimer) window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(function () {
+      toastEl.classList.remove('show');
+      toastTimer = null;
+    }, 1900);
+  }
+
+  /* ==========================================================
+     SCREEN NAVIGATION
+     ========================================================== */
+  var SCREENS = ['screen-splash', 'screen-menu', 'screen-game', 'screen-settings',
+                 'screen-about-game', 'screen-about-dev', 'screen-complete', 'screen-failed'];
+
+  function showScreen(id) {
+    for (var i = 0; i < SCREENS.length; i++) {
+      var el = $(SCREENS[i]);
+      if (!el) continue;
+      if (SCREENS[i] === id) el.classList.add('active');
+      else el.classList.remove('active');
+    }
+  }
+
+  /* ==========================================================
+     LEVEL LIFECYCLE
+     ========================================================== */
+  function cancelTimers() {
+    if (chainTimer) { window.clearTimeout(chainTimer); chainTimer = null; }
+    if (hintTimer) { window.clearTimeout(hintTimer); hintTimer = null; }
+  }
+
+  function startLevel(n) {
+    cancelTimers();
+    overlayPause.classList.remove('active');
+    overlayConfirm.classList.remove('active');
+
+    n = clamp(Math.floor(n) || 1, 1, 100);
+
+    var data;
+    try {
+      data = generateLevel(n);
+    } catch (e) {
+      data = null;
+    }
+
+    if (!data || !data.grid || data.pinCount <= 0) {
+      toast('Could not build that level. Returning home.');
+      G.state = 'MENU';
+      showScreen('screen-menu');
+      return;
+    }
+
+    L = data;
+    G.level = n;
+    G.cols = data.cols;
+    G.rows = data.rows;
+    G.par = data.par;
+    G.tapsTotal = data.tapsLimit;
+    G.tapsLeft = data.tapsLimit;
+    G.pinsTotal = data.pinCount;
+    G.pinsLeft = data.pinCount;
+    G.hints = 3;
+    G.state = 'PLAYING';
+
+    boardArr = [];
+    for (var r = 0; r < data.rows; r++) {
+      var row = new Array(data.cols);
+      for (var c = 0; c < data.cols; c++) row[c] = null;
+      boardArr.push(row);
+    }
+
+    showScreen('screen-game');
+    renderBoard();
+    updateHUD();
+
+    window.requestAnimationFrame(function () { layout(); });
+  }
+
+  function restartLevel() {
+    cancelTimers();
+    startLevel(G.level);
+    toast('Level restarted');
+  }
+
+  /* ==========================================================
+     CORE TAP LOGIC
+     ========================================================== */
+  function doTap(pin) {
+    if (G.state !== 'PLAYING') return;
+    if (!pin || !pin.el) return;
+    if (!boardArr[pin.r] || boardArr[pin.r][pin.c] !== pin) return;
+
+    var group = findGroup(pin.r, pin.c);
+    if (!group.length) return;
+
+    G.state = 'CHAIN_REACTION';
+
+    var originR = pin.r, originC = pin.c;
+
+    /* 1. remove from the model */
+    for (var i = 0; i < group.length; i++) {
+      boardArr[group[i].r][group[i].c] = null;
+    }
+
+    /* 2. animate the pop with distance-based stagger */
+    var maxDelay = 0;
+    for (var j = 0; j < group.length; j++) {
+      var p = group[j];
+      var d = Math.abs(p.r - originR) + Math.abs(p.c - originC);
+      var delay = REDUCED ? 0 : Math.min(d * 32, 160);
+      if (delay > maxDelay) maxDelay = delay;
+      if (p.el) {
+        p.el.style.animationDelay = '0ms';
+        p.el.querySelector('.pin-dot').style.animationDelay = delay + 'ms';
+        p.el.classList.add('pop');
+        p.el.style.pointerEvents = 'none';
+      }
+    }
+
+    /* 3. gravity + reposition (overlaps with the pop animation) */
+    applyGravityBoard();
+    window.requestAnimationFrame(repositionPins);
+
+    /* 4. stats + feedback */
+    G.pinsLeft = Math.max(0, G.pinsLeft - group.length);
+    G.tapsLeft = Math.max(0, G.tapsLeft - 1);
+    updateHUD();
+
+    Sound.pop(group.length);
+    Haptics.buzz(Math.min(45, 12 + group.length * 2));
+
+    if (group.length >= 5 && !REDUCED) {
+      boardEl.classList.remove('shake');
+      void boardEl.offsetWidth;   /* restart animation */
+      boardEl.classList.add('shake');
+      window.setTimeout(function () { boardEl.classList.remove('shake'); }, 260);
+    }
+
+    /* 5. settle */
+    var settle = REDUCED ? 60 : (maxDelay + 280);
+    var tappedGroup = group;
+
+    chainTimer = window.setTimeout(function () {
+      chainTimer = null;
+      for (var k = 0; k < tappedGroup.length; k++) {
+        var el = tappedGroup[k].el;
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      }
+
+      if (G.pinsLeft <= 0) { levelComplete(); return; }
+      if (G.tapsLeft <= 0) { levelFailed(); return; }
+      if (G.state === 'CHAIN_REACTION') G.state = 'PLAYING';
+      updateHUD();
+    }, settle);
+  }
+
+  /* ==========================================================
+     WIN / LOSE
+     ========================================================== */
+  function levelComplete() {
+    if (G.state === 'COMPLETE') return;
+    G.state = 'COMPLETE';
+
+    Sound.win();
+    Haptics.buzz([18, 40, 18]);
+
+    var used = G.tapsTotal - G.tapsLeft;
+    var stars = used <= G.par ? 3 : used <= G.par + 2 ? 2 : 1;
+
+    var starsEl = $('complete-stars');
+    var out = '';
+    for (var i = 0; i < 3; i++) out += (i < stars ? '★' : '☆');
+    starsEl.textContent = out;
+
+    $('complete-info').textContent =
+      'Level ' + G.level + ' · ' + used + ' tap' + (used === 1 ? '' : 's') +
+      ' (par ' + G.par + ')';
+
+    if (G.level + 1 > Progress.unlocked && G.level < 100) {
+      Progress.unlocked = G.level + 1;
+      Progress.save();
+    }
+
+    var nextBtn = $('btn-next');
+    if (G.level >= 100) {
+      nextBtn.textContent = '🎉 All Levels Done!';
+    } else {
+      nextBtn.textContent = 'Next Level';
+    }
+
+    window.setTimeout(function () { showScreen('screen-complete'); }, 180);
+  }
+
+  function levelFailed() {
+    if (G.state === 'FAILED') return;
+    G.state = 'FAILED';
+
+    Sound.fail();
+    Haptics.buzz([40, 60, 40]);
+
+    $('failed-info').textContent =
+      'Out of taps! ' + G.pinsLeft + ' pin' + (G.pinsLeft === 1 ? '' : 's') + ' left.';
+
+    window.setTimeout(function () { showScreen('screen-failed'); }, 180);
+  }
+
+  /* ==========================================================
+     PAUSE
+     ========================================================== */
+  function pauseGame() {
+    if (G.state !== 'PLAYING') return;
+    G.state = 'PAUSED';
+    overlayPause.classList.add('active');
+  }
+
+  function resumeGame() {
+    if (G.state !== 'PAUSED') return;
+    overlayPause.classList.remove('active');
+    G.state = 'PLAYING';
+  }
+
+  /* ==========================================================
+     INPUT
+     ========================================================== */
+  boardEl.addEventListener('click', function (e) {
+    if (G.state !== 'PLAYING') return;
+    var target = e.target;
+    if (!target || !target.closest) return;
+    var pinEl = target.closest('.pin');
+    if (!pinEl || !pinEl._pin) return;
+    e.preventDefault();
+    doTap(pinEl._pin);
+  }, false);
+
+  /* ==========================================================
+     SETTINGS UI SYNC
+     ========================================================== */
+  function syncSettingsUI() {
+    $('set-music').checked = !!Settings.music;
+    $('set-sfx').checked = !!Settings.sfx;
+    $('set-haptics').checked = !!Settings.haptics;
+    $('set-volume').value = Math.round(Settings.volume * 100);
+    $('set-volume').disabled = !Settings.music;
+
+    var note = $('haptics-note');
+    if (!Haptics.supported) {
+      note.textContent = 'Haptics are not supported on this device — the game works fine without them.';
+    } else {
+      note.textContent = 'Uses gentle vibration on supported devices.';
+    }
+  }
+
+  /* ==========================================================
+     WIRE UP BUTTONS
+     ========================================================== */
+  function safeClick(fn) {
+    return function (e) {
+      try { Sound.click(); } catch (err) { /* ignore */ }
+      Haptics.buzz(8);
+      try { fn(e); } catch (err) {
+        /* never let a handler crash the app */
+        if (window.console && console.warn) console.warn('PIN POP handler error:', err);
+      }
+    };
+  }
+
+  /* ---- menu ---- */
+  $('btn-play').addEventListener('click', safeClick(function () {
+    startLevel(Progress.unlocked);
+  }));
+
+  $('btn-settings').addEventListener('click', safeClick(function () {
+    G.settingsFrom = 'menu';
+    syncSettingsUI();
+    showScreen('screen-settings');
+  }));
+
+  $('btn-about-game').addEventListener('click', safeClick(function () {
+    showScreen('screen-about-game');
+  }));
+
+  $('btn-about-dev').addEventListener('click', safeClick(function () {
+    showScreen('screen-about-dev');
+  }));
+
+  /* ---- settings ---- */
+  $('btn-settings-back').addEventListener('click', safeClick(function () {
+    if (G.settingsFrom === 'pause' && G.state === 'PAUSED') {
+      showScreen('screen-game');
+      overlayPause.classList.add('active');
+    } else {
+      showScreen('screen-menu');
+    }
+  }));
+
+  $('set-music').addEventListener('change', function () {
+    Settings.music = this.checked;
+    Settings.save();
+    Sound.applyVolumes();
+    if (Settings.music) Sound.startMusic();
+    else Sound.stopMusic();
+    $('set-volume').disabled = !Settings.music;
+  });
+
+  $('set-volume').addEventListener('input', function () {
+    var v = clamp(parseInt(this.value, 10) || 0, 0, 100) / 100;
+    Settings.volume = v;
+    Settings.save();
+    Sound.applyVolumes();
+  });
+
+  $('set-sfx').addEventListener('change', function () {
+    Settings.sfx = this.checked;
+    Settings.save();
+    Sound.applyVolumes();
+    if (Settings.sfx) Sound.click();
+  });
+
+  $('set-haptics').addEventListener('change', function () {
+    Settings.haptics = this.checked;
+    Settings.save();
+    if (Settings.haptics) Haptics.buzz(20);
+  });
+
+  $('btn-set-restart').addEventListener('click', safeClick(function () {
+    if (G.state === 'PAUSED') overlayPause.classList.remove('active');
+    startLevel(G.level);
+  }));
+
+  $('btn-set-reset').addEventListener('click', safeClick(function () {
+    overlayConfirm.classList.add('active');
+  }));
+
+  $('btn-confirm-cancel').addEventListener('click', safeClick(function () {
+    overlayConfirm.classList.remove('active');
+  }));
+
+  $('btn-confirm-reset').addEventListener('click', safeClick(function () {
+    Progress.reset();
+    G.level = 1;
+    G.state = 'MENU';
+    overlayConfirm.classList.remove('active');
+    overlayPause.classList.remove('active');
+    cancelTimers();
+    updateMenuLevelNote();
+    showScreen('screen-menu');
+    toast('Progress reset');
+  }));
+
+  /* ---- about back buttons ---- */
+  $('btn-about-game-back').addEventListener('click', safeClick(function () {
+    showScreen(G.state === 'PAUSED' ? 'screen-game' : 'screen-menu');
+    if (G.state === 'PAUSED') overlayPause.classList.add('active');
+  }));
+
+  $('btn-about-dev-back').addEventListener('click', safeClick(function () {
+    showScreen(G.state === 'PAUSED' ? 'screen-game' : 'screen-menu');
+    if (G.state === 'PAUSED') overlayPause.classList.add('active');
+  }));
+
+  /* ---- in-game ---- */
+  $('btn-pause').addEventListener('click', safeClick(function () {
+    pauseGame();
+  }));
+
+  $('btn-restart').addEventListener('click', safeClick(function () {
+    restartLevel();
+  }));
+
+  $('btn-hint').addEventListener('click', safeClick(function () {
+    if (G.state !== 'PLAYING') return;
+    if (G.hints <= 0) { toast('No hints left'); return; }
+
+    var best = null;
+    var seen = new Uint8Array(G.cols * G.rows);
+    for (var r = 0; r < G.rows; r++) {
+      for (var c = 0; c < G.cols; c++) {
+        if (!boardArr[r][c] || seen[r * G.cols + c]) continue;
+        var g = findGroup(r, c);
+        for (var i = 0; i < g.length; i++) seen[g[i].r * G.cols + g[i].c] = 1;
+        if (!best || g.length > best.length) best = g;
+      }
+    }
+    if (!best || !best.length) { toast('Board is empty'); return; }
+
+    G.hints--;
+    updateHUD();
+
+    for (var k = 0; k < best.length; k++) {
+      if (best[k].el) best[k].el.classList.add('hint');
+    }
+    if (hintTimer) window.clearTimeout(hintTimer);
+    hintTimer = window.setTimeout(function () {
+      for (var m = 0; m < best.length; m++) {
+        if (best[m].el) best[m].el.classList.remove('hint');
+      }
+      hintTimer = null;
+    }, 1750);
+
+    toast('Pop the biggest group (' + best.length + ' pins)');
+  }));
+
+  /* ---- pause overlay ---- */
+  $('btn-resume').addEventListener('click', safeClick(function () { resumeGame(); }));
+
+  $('btn-pause-restart').addEventListener('click', safeClick(function () {
+    overlayPause.classList.remove('active');
+    startLevel(G.level);
+  }));
+
+  $('btn-pause-settings').addEventListener('click', safeClick(function () {
+    G.settingsFrom = 'pause';
+    overlayPause.classList.remove('active');
+    syncSettingsUI();
+    showScreen('screen-settings');
+  }));
+
+  $('btn-pause-menu').addEventListener('click', safeClick(function () {
+    overlayPause.classList.remove('active');
+    cancelTimers();
+    G.state = 'MENU';
+    updateMenuLevelNote();
+    showScreen('screen-menu');
+  }));
+
+  /* ---- complete ---- */
+  $('btn-next').addEventListener('click', safeClick(function () {
+    if (G.level >= 100) {
+      G.state = 'MENU';
+      updateMenuLevelNote();
+      showScreen('screen-menu');
+      return;
+    }
+    startLevel(G.level + 1);
+  }));
+
+  $('btn-replay').addEventListener('click', safeClick(function () {
+    startLevel(G.level);
+  }));
+
+  $('btn-complete-home').addEventListener('click', safeClick(function () {
+    G.state = 'MENU';
+    updateMenuLevelNote();
+    showScreen('screen-menu');
+  }));
+
+  /* ---- failed ---- */
+  $('btn-retry').addEventListener('click', safeClick(function () {
+    startLevel(G.level);
+  }));
+
+  $('btn-failed-menu').addEventListener('click', safeClick(function () {
+    G.state = 'MENU';
+    updateMenuLevelNote();
+    showScreen('screen-menu');
+  }));
+
+  /* ==========================================================
+     MENU LEVEL NOTE
+     ========================================================== */
+  function updateMenuLevelNote() {
+    var note = $('menu-level-note');
+    if (Progress.unlocked > 1) {
+      note.textContent = 'Continue at Level ' + Progress.unlocked;
+    } else {
+      note.textContent = 'Start at Level 1';
+    }
+  }
+
+  /* ==========================================================
+     KEYBOARD
+     ========================================================== */
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      if (overlayConfirm.classList.contains('active')) {
+        overlayConfirm.classList.remove('active');
+        return;
+      }
+      if (overlayPause.classList.contains('active')) {
+        resumeGame();
+        return;
+      }
+      var gameVisible = $('screen-game').classList.contains('active');
+      if (gameVisible && G.state === 'PLAYING') pauseGame();
+    }
+  }, false);
+
+  /* ==========================================================
+     VISIBILITY / RESIZE
+     ========================================================== */
+  document.addEventListener('visibilitychange', function () {
+    try {
+      if (document.hidden) {
+        Sound.stopMusic();
+        if (G.state === 'PLAYING') pauseGame();
+      } else {
+        if (Settings.music) Sound.startMusic();
+      }
+    } catch (e) { /* ignore */ }
+  }, false);
+
+  var resizeTimer = null;
+  function handleResize() {
+    if (resizeTimer) window.clearTimeout(resizeTimer);
+    boardEl.classList.add('no-anim');
+    layout();
+    resizeTimer = window.setTimeout(function () {
+      boardEl.classList.remove('no-anim');
+      resizeTimer = null;
+    }, 160);
+  }
+  window.addEventListener('resize', handleResize, false);
+  window.addEventListener('orientationchange', function () {
+    window.setTimeout(handleResize, 220);
+  }, false);
+
+  /* ==========================================================
+     AUDIO UNLOCK ON FIRST GESTURE
+     ========================================================== */
+  var unlocked = false;
+  function firstGesture() {
+    if (unlocked) return;
+    unlocked = true;
+    window.removeEventListener('pointerdown', firstGesture, true);
+    window.removeEventListener('keydown', firstGesture, true);
+    window.removeEventListener('touchstart', firstGesture, true);
+    try {
+      Sound.init();
+      Sound.resume();
+      if (Settings.music) Sound.startMusic();
+    } catch (e) { /* audio must never break the game */ }
+  }
+  window.addEventListener('pointerdown', firstGesture, true);
+  window.addEventListener('keydown', firstGesture, true);
+  window.addEventListener('touchstart', firstGesture, true);
+
+  /* ==========================================================
+     BOOT
+     ========================================================== */
+  function boot() {
+    updateMenuLevelNote();
+    syncSettingsUI();
+
+    /* splash for exactly 2 seconds */
+    showScreen('screen-splash');
+    window.setTimeout(function () {
+      showScreen('screen-menu');
+      window.requestAnimationFrame(function () { layout(); });
+    }, 2000);
+  }
+
+  /* guard against any unexpected global error leaving a blank screen */
+  window.addEventListener('error', function () {
+    try {
+      if (!document.querySelector('.screen.active')) showScreen('screen-menu');
+    } catch (e) { /* ignore */ }
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    boot();
+  }
+
+})();
+</script>
+</body>
+</html>
